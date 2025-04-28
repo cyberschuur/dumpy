@@ -23,7 +23,6 @@ use tracing::{error, info};
 const DEFAULT_DURATION: &str = "1m";
 
 #[derive(Deserialize, Debug, Clone)]
-#[allow(dead_code)]
 pub struct FetchRequest {
     #[serde(rename = "query-type")]
     query_type: String,

@@ -10,7 +10,6 @@ use axum::Extension;
 use axum_server::tls_rustls::RustlsConfig;
 use base64::prelude::*;
 use rust_embed::RustEmbed;
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use tracing::{error, info};
@@ -18,24 +17,6 @@ use tracing::{error, info};
 #[derive(RustEmbed)]
 #[folder = "www/"]
 struct Asset;
-
-#[derive(Deserialize, Debug)]
-#[allow(dead_code)]
-struct FetchRequest {
-    #[serde(rename = "default-timezone-offset")]
-    default_timezone_offset: String,
-    #[serde(rename = "query-type")]
-    query_type: String,
-    filter: String,
-    #[serde(rename = "start-time")]
-    start_time: String,
-    duration: String,
-    event: Option<String>,
-    #[serde(rename = "duration-before")]
-    duration_before: String,
-    #[serde(rename = "duration-after")]
-    duration_after: String,
-}
 
 #[tokio::main]
 pub async fn start_server() -> Result<()> {
