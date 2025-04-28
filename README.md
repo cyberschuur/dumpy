@@ -37,8 +37,6 @@ file directories such as those produced by Suricata.
 cargo install --git https://github.com/cyberschuur/dumpy
 ```
 
-Installation from *crates.io* will become available after 0.4.0 is released.
-
 ## Suricata Configuration
 
 For Dumpy to be of much use you will need a tool to log PCAP files. Suricata 
