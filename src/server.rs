@@ -8,6 +8,7 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode, Uri};
 use axum::response::IntoResponse;
 use axum::Extension;
 use axum_server::tls_rustls::RustlsConfig;
+use base64::prelude::*;
 use rust_embed::RustEmbed;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -140,7 +141,7 @@ impl Authenticator {
 
         if header.starts_with("Basic ") {
             if let Some(encoded) = header.split(' ').nth(1) {
-                if let Ok(usernamepassword) = base64::decode(encoded) {
+                if let Ok(usernamepassword) = BASE64_STANDARD.decode(encoded) {
                     if let Ok(usernamepassword) = String::from_utf8(usernamepassword) {
                         let parts: Vec<&str> = usernamepassword.splitn(2, ':').collect();
                         if parts.len() == 2 {

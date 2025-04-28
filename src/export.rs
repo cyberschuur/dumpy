@@ -39,7 +39,7 @@ pub(crate) struct ExportArgs {
     /// If provided, packets with a timestamp older than the one provided will
     /// not be exported.
     #[clap(long)]
-    start_time: Option<i64>,
+    start_time: Option<i32>,
 
     /// Duration after start-time
     ///
@@ -47,7 +47,7 @@ pub(crate) struct ExportArgs {
     /// considered for export. This refers to the packet timestamp, not real
     /// time.
     #[clap(long)]
-    duration: Option<i64>,
+    duration: Option<i32>,
 
     /// Enable more verbose logging
     #[clap(long, short, action = clap::ArgAction::Count)]
@@ -102,7 +102,7 @@ fn load_files(directory: &Path, args: &ExportArgs) -> Result<Option<SortedFiles>
         return Ok(None);
     }
     let start_time = args.start_time.unwrap_or(0) as u64;
-    let end_time = start_time + args.duration.unwrap_or(i64::MAX) as u64;
+    let end_time = start_time + args.duration.unwrap_or(i32::MAX) as u64;
 
     let mut sorted: SortedFiles = HashMap::new();
     for entry in std::fs::read_dir(directory)? {
@@ -215,7 +215,7 @@ fn process_file(args: &ExportArgs, path: &Path, out: &mut Option<pcap::Savefile>
         cf.filter(filter, true)?;
     }
     loop {
-        let n = cf.next();
+        let n = cf.next_packet();
         match n {
             Ok(pkt) => {
                 let secs = pkt.header.ts.tv_sec;
