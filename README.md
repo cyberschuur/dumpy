@@ -31,16 +31,10 @@ file directories such as those produced by Suricata.
 
 ### With Cargo
 
-#### Latest Release
-
-```
-cargo install dumpy
-```
-
 #### Latest Git Master
 
 ```
-cargo install --git https://github.com/jasonish/dumpy
+cargo install --git https://github.com/cyberschuur/dumpy
 ```
 
 Installation from *crates.io* will become available after 0.4.0 is released.
