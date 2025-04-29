@@ -31,7 +31,7 @@ file directories such as those produced by Suricata.
 
 ### With Cargo
 
-#### Latest Git Master
+### Latest Git Master
 
 ```
 cargo install --git https://github.com/cyberschuur/dumpy
