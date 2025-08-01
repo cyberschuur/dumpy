@@ -162,10 +162,13 @@ impl Authenticator {
         }
 
         if let Some((username, password)) = Self::decode_username_password(&request) {
+            info!("Authenticating user: {}", username);
             if let Some(hashed) = self.users.get(&username) {
                 if bcrypt::verify(password, hashed).unwrap_or(false) {
+                    info!("User {} authenticated successfully", username);
                     return next.run(request).await;
                 }
+                error!("User {} failed authentication", username);
             }
         }
 
