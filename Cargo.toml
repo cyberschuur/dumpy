@@ -31,3 +31,5 @@ tokio-stream = { version = "0.1.17", default-features = false, features = [] }
 tokio-util = { version = "0.7.15", default-features = false, features = ["io"] }
 tracing = { version = "0.1.41", default-features = false, features = [] }
 tracing-subscriber = { version = "0.3.19", default-features = false, features = ["json", "fmt", "ansi", "time"] }
+parking_lot = "0.12.1"
+rayon = "1.10.0"

@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 use tracing::{debug, error, Level};
 use tracing::{info, warn};
+use rayon::prelude::*;
 
 type SortedFiles = HashMap<u64, Vec<(u64, PathBuf)>>;
 
@@ -77,20 +78,21 @@ pub(crate) fn main(args: ExportArgs) -> anyhow::Result<()> {
 
     info!("args: {:?}", std::env::args());
 
-    let mut dump_out = None;
+    let dump_out = std::sync::Arc::new(parking_lot::Mutex::new(None));
 
     if let Ok(Some(files)) = load_files(Path::new(&args.directory), &args) {
-        for (_id, files) in files {
-            for (_ts, filename) in files {
-                if let Err(err) = process_file(&args, &filename, &mut dump_out) {
+        files.par_iter().for_each(|(_id, files)| {
+            files.par_iter().for_each(|(_ts, filename)| {
+                let mut out = dump_out.lock();
+                if let Err(err) = process_file(&args, filename, &mut *out) {
                     error!("Failed to process {} -- {:?}", filename.display(), err);
                     std::process::exit(1);
                 }
-            }
-        }
+            });
+        });
     } else {
         warn!("Failed to loaded sorted file list, processing will not be optimized");
-        process_dir(&args, Path::new(&args.directory), &mut dump_out);
+        process_dir_parallel(&args, Path::new(&args.directory), &dump_out);
     }
     Ok(())
 }
@@ -172,28 +174,45 @@ fn parse_filename(filename: &OsStr) -> Option<(u64, u64)> {
     None
 }
 
-fn process_dir(args: &ExportArgs, directory: &Path, out: &mut Option<pcap::Savefile>) {
-    for entry in std::fs::read_dir(directory).unwrap() {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        if path.is_dir() && args.recursive {
-            process_dir(args, &path, out);
-        } else if path.is_file() {
-            if let Some(prefix) = &args.prefix {
-                if let Some(filename) = path.file_name().and_then(|filename| filename.to_str()) {
-                    if !filename.starts_with(prefix) {
-                        continue;
+fn process_dir_parallel(args: &ExportArgs, directory: &Path, out: &std::sync::Arc<parking_lot::Mutex<Option<pcap::Savefile>>>) {
+    let entries: Vec<_> = std::fs::read_dir(directory)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .collect();
+    let files: Vec<_> = entries
+        .iter()
+        .filter_map(|entry| {
+            let path = entry.path();
+            if path.is_file() {
+                if let Some(prefix) = &args.prefix {
+                    if let Some(filename) = path.file_name().and_then(|filename| filename.to_str()) {
+                        if !filename.starts_with(prefix) {
+                            return None;
+                        }
                     }
                 }
+                Some(path)
+            } else {
+                None
             }
-            if let Err(err) = process_file(args, &path, out) {
-                error!("{:?}", err);
-                std::process::exit(1);
-            }
-        } else {
+        })
+        .collect();
+    files.par_iter().for_each(|path| {
+        let mut out = out.lock();
+        if let Err(err) = process_file(args, path, &mut *out) {
+            error!("{:?}", err);
+            std::process::exit(1);
+        }
+    });
+    // Handle recursion for directories
+    entries.iter().for_each(|entry| {
+        let path = entry.path();
+        if path.is_dir() && args.recursive {
+            process_dir_parallel(args, &path, out);
+        } else if !path.is_file() {
             debug!("Ignoring {:?}", &path);
         }
-    }
+    });
 }
 
 fn process_file(args: &ExportArgs, path: &Path, out: &mut Option<pcap::Savefile>) -> Result<()> {
